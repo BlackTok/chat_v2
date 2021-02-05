@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -41,43 +40,60 @@ public class Server {
         }
     }
 
-    public void broadcastMsg(ClientHandler sender, String msg){
+    public void broadcastMsg(ClientHandler sender, String msg) {
         String message = String.format("[ %s ] : %s", sender.getNickname(), msg);
         for (ClientHandler c : clients) {
             c.sendMsg(message);
         }
     }
-    
-    public void broadcastPrivateMsg (ClientHandler sender, String recipientName, String msg) {
-        String message = String.format("[ %s ] : %s", sender.getNickname(), msg);
-        ClientHandler recipient = null;
 
-        for (ClientHandler client : clients) {
-            if (client.getNickname().equals(recipientName)) {
-                recipient = client;
-                break;
+    public void privateMsg(ClientHandler sender, String receiver, String msg) {
+        String message = String.format("[ %s ] to [ %s ]: %s", sender.getNickname(), receiver, msg);
+        for (ClientHandler c : clients) {
+            if(c.getNickname().equals(receiver)){
+                c.sendMsg(message);
+                if(!c.equals(sender)){
+                    sender.sendMsg(message);
+                }
+                return;
             }
         }
-
-        if (recipient == null) {
-            sender.sendMsg(Command.ERROR_MSG_UNKNOWN_USER);
-        } else if (recipient.equals(sender)) {
-            sender.sendMsg(Command.ERROR_MSG_SEND_YOURSELF);
-        } else {
-            sender.sendMsg(message);
-            recipient.sendMsg(message);
-        }
+        sender.sendMsg("not found user: "+ receiver);
     }
 
-    public void subscribe(ClientHandler clientHandler){
+    public void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
+        broadcastClientList();
     }
 
-    public void unsubscribe(ClientHandler clientHandler){
+    public void unsubscribe(ClientHandler clientHandler) {
         clients.remove(clientHandler);
+        broadcastClientList();
     }
 
     public AuthService getAuthService() {
         return authService;
+    }
+
+    public boolean isLoginAuthenticated(String login){
+        for (ClientHandler c : clients) {
+            if(c.getLogin().equals(login)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void broadcastClientList(){
+        StringBuilder sb = new StringBuilder(Command.CLIENT_LIST);
+        for (ClientHandler c : clients) {
+            sb.append(" ").append(c.getNickname());
+        }
+
+        String message = sb.toString();
+
+        for (ClientHandler c : clients) {
+            c.sendMsg(message);
+        }
     }
 }
