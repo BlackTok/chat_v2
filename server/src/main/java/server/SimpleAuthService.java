@@ -32,11 +32,22 @@ public class SimpleAuthService implements AuthService {
     @Override
     public String getNicknameByLoginAndPassword(String login, String password) {
         for (UserData user : users) {
-            if(user.login.equals(login) && user.password.equals(password)){
+            if (user.login.equals(login) && user.password.equals(password)) {
                 return user.nickname;
             }
         }
 
         return null;
+    }
+
+    @Override
+    public boolean registration(String login, String password, String nickname) {
+        for (UserData user : users) {
+            if (user.login.equals(login) || user.nickname.equals(nickname)) {
+                return false;
+            }
+        }
+        users.add(new UserData(login, password, nickname));
+        return true;
     }
 }
